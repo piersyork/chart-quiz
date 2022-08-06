@@ -1,0 +1,40 @@
+---
+title: "Covid"
+output: html_document
+date: '2022-06-15'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(ggplot2)
+library(DBI)
+
+theme_set(owidR::theme_owid())
+
+
+
+
+
+```
+
+```{r}
+con <- dbConnect(RPostgres::Postgres(), dbname = "postgres", host = "database-1.cshnmell2nzk.eu-west-2.rds.amazonaws.com",
+                 user = "postgres",
+                 password = rstudioapi::askForPassword("Database password"))
+```
+
+```{sql, connection = con, output.var = "sql_out"}
+
+select date, location, new_cases_smoothed_per_million
+from covid
+where iso_code in ('USA', 'GBR')
+
+```
+
+```{r}
+sql_out |> 
+  ggplot(aes(date, new_cases_smoothed_per_million, colour = location)) +
+  geom_line()
+```
+

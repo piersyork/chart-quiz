@@ -1,0 +1,212 @@
+---
+title: "Chart quiz"
+format: 
+  revealjs:
+    theme: simple
+    self-contained: true
+# pptx
+editor: visual
+---
+
+# Part 1: Famous charts
+
+```{r}
+#| include: false
+#| label: setup
+knitr::opts_chunk$set(echo = FALSE, fig.width = 6, fig.height = 3, out.width = '100%')
+
+library(owidR)
+library(ggplot2)
+library(dplyr)
+
+theme_set(theme_owid(import_fonts = FALSE) + theme(axis.title = element_blank(), 
+                                                   axis.text = element_text(size = 8)))
+
+```
+
+## What does this chart depict? Who was the creator?
+
+Bonus Point: In what year was it created?
+
+![](https://cdns.tblsft.com/sites/default/files/pages/1_napolean_minard.png){height="380pt"}
+
+
+## What is the y-axis on this chart?
+
+```{r}
+covid <- readr::read_csv("data/uk_covid.csv")
+
+covid |> 
+  ggplot(aes(date, new_cases_smoothed)) +
+  geom_line(colour = "#CB480E") +
+  scale_y_continuous(labels = scales::label_number(big.mark = ",")) +
+  scale_x_date(date_breaks = "6 months", 
+               date_labels = "%B %Y",
+               limits = c(lubridate::date("2020-02-01"), NA)) +
+  theme(panel.grid.major.x = element_blank())
+
+```
+
+## What does this map show? Who was the creator?
+
+![](https://cdns.tblsft.com/sites/default/files/pages/2_snow-cholera-map.jpg){height="400pt"}
+
+## What does this map show?
+<!-- http://www.puffpuffproject.com/languages.html -->
+
+![](languages-of-the-world.png){height="440pt"}
+
+## What are the four variables in this plot? (x-axis, y-axis, colour, size)
+
+```{r}
+#| cache: true
+#| label: gapminder
+
+## source: owid
+
+life_exp_gdp <- owid("life-expectancy-vs-gdp-per-capita", rename = c("life_exp", "gdp", "population", "continent")) |>
+  na.omit()
+
+life_exp_gdp |>
+  ggplot(aes(x = gdp, y = life_exp, size = population, colour = continent, label = entity)) +
+  geom_point(show.legend = FALSE, shape = 1, stroke = 0.8) +
+  scale_x_log10(labels = scales::label_dollar()) +
+  ggsci::scale_colour_lancet() +
+  scale_size_area(max_size = 20)
+```
+
+# Part 2: Guess the chart
+
+## What is the x-axis?
+
+```{r}
+#| label: royals
+## Royal instagram followers | source:https://www-statista-com.libproxy.ucl.ac.uk/study/25128/the-british-royal-family-uk-statista-dossier/
+royal_followers <- tibble(family = c("The Royal Family (United Kingdom)",
+                                         "Koninklijk Huis (the Netherlands)",
+                                         "Kungahuset (Sweden)",
+                                         "Det Norske Kongehuset (Norway)",
+                                         "Belgian Royal Palace (Belgium)"),
+                              followers = c(8700000,
+                                            746000,
+                                            482000,
+                                            215000,
+                                            80900))
+
+royal_followers |>
+  ggplot(aes(followers, forcats::fct_reorder(family, followers))) +
+  geom_col(fill = "#631879") +
+  scale_x_continuous(labels = scales::label_comma()) +
+  theme(panel.grid.major.y = element_blank())
+```
+
+
+## What paper is missing?
+
+```{r}
+#| fig-height: 4
+papers <- readxl::read_xlsx("data/popular_newspapers.xlsx", sheet = 2, range = "B6:C15", col_names = c("paper", "popularity"))
+
+papers |>
+  mutate(paper = if_else(paper == "The Times", "", paper)) |>
+  ggplot(aes(popularity, forcats::fct_reorder(paper, popularity))) +
+  geom_col(fill = "#CB480E") +
+  labs(x = "Share of respondants having a positive opinion (Q4 2020)") +
+  theme(axis.title.x = element_text(), panel.grid.major.y = element_blank())
+```
+
+## Which is the correct chart?
+Peoples' level of exercise:
+
+```{r}
+#| label: true-activity
+#| fig-width: 8
+## Physical activity: https://www-statista-com.libproxy.ucl.ac.uk/statistics/326672/physical-activity-levels-by-gender-in-england/
+# create four graphs: which one is correct
+# aerobic guidelines: At least 150 minutes moderately intensive activity (MPA) or 75 minutes vigorous activity (VPA) per week (pw) or an equivalent combination of these
+activity_levels <- factor(c("Meets aerobic\nguidelines", "Some\nactivity", "Low\nactivity", "Inactive"),
+                          levels = c("Meets aerobic\nguidelines", "Some\nactivity", "Low\nactivity", "Inactive"))
+
+plot_activity <- function(x) {
+  x |> 
+    ggplot(aes(level, pct)) +
+    geom_col(fill = "#00468B") +
+    scale_y_continuous(labels = scales::label_percent(), limits = c(0, 0.7)) +
+    theme(axis.text.x = element_text(size = 7), axis.text.y = element_text(size = 8),
+          plot.title = element_text(size = 8, face = "bold"),
+          panel.grid.major.x = element_blank())
+}
+
+plot1 <- tibble(level = activity_levels, pct = c(0.23, 0.3, 0.04, 0.43)) |>
+  plot_activity() +
+  labs(title = "A")
+
+#actual
+plot2 <- tibble(level = activity_levels, pct = c(0.62, 0.11, 0.04, 0.23)) |>
+  plot_activity() +
+  labs(title = "B")
+
+plot3 <- tibble(level = activity_levels, pct = c(0.05, 0.3, 0.5, 0.15)) |>
+  plot_activity() +
+  labs(title = "C")
+
+plot4 <- tibble(level = activity_levels, pct = c(0.21, 0.6, 0.13, 0.06)) |>
+  plot_activity() +
+  labs(title = "D")
+
+cowplot::plot_grid(plotlist = list(plot1, plot2, plot3, plot4))
+```
+
+^~Aerobic guideline: At least 150 minutes moderately intensive activity or 75 minutes vigorous~^
+
+^~activity per week or an equivalent combination of these~^
+
+## What is the x-axis?
+
+```{r charities}
+#| label: charities
+# Source https://register-of-charities.charitycommission.gov.uk/sector-data/top-10-charities
+charities <- stringr::str_to_title(c("PARKRUN GLOBAL LIMITED",
+                                     "KEEP BRITAIN TIDY",
+                                     "THE SCOUT ASSOCIATION",
+                                     "THE GUIDE ASSOCIATION SOUTH-WEST ENGLAND",
+                                     "NEIGHBOURHOOD WATCH NETWORK",
+                                     "THE GUIDE ASSOCIATION",
+                                     "EDUCATION & EMPLOYERS TASKFORCE",
+                                     "THE CHURCH OF JESUS CHRIST OF LATTER-DAY SAINTS",
+                                     "THE ROYAL BRITISH LEGION",
+                                     "THE NATIONAL TRUST"))
+
+
+
+tibble(charity = charities, volunteers = c(279710, 196260, 141659, 100000, 100000, 80000, 63608, 61000, 55000, 50000)) |>
+  ggplot(aes(volunteers, forcats::fct_reorder(charity, volunteers))) +
+  geom_col(fill = "#008280") +
+  scale_x_continuous(labels = scales::label_comma(), limits = c(0, 300000)) +
+  theme(axis.text = element_text(size = 8), panel.grid.major.y = element_blank())
+```
+
+
+## What film is missing?
+```{r}
+film_gross <- data.frame(
+  stringsAsFactors = FALSE,
+             title = c("","Avatar", # top = gone with the wind
+                       "Titanic","Star Wars","Avengers: Endgame",
+                       "The Sound of Music","E.T. the Extra-Terrestrial",
+                       "The Ten Commandments","Doctor Zhivago","Star Wars: The Force Awakens"),
+             gross = c(3724000000, 3273000000, 3096000000, 3059000000, 2811000000, 2562000000,
+                       2501000000, 2368000000, 2244000000, 2213000000),
+              Year = c(1939L,2009L,1997L,1977L,
+                       2019L,1965L,1982L,1956L,1965L,2015L)
+)
+
+film_gross |>
+  ggplot(aes(gross/1e9, forcats::fct_reorder(title, gross))) +
+  geom_col(fill = "#DC5E78") +
+  scale_x_continuous(labels = scales::label_dollar(suffix = "bn")) +
+  theme(panel.grid.major.y = element_blank(),
+        axis.title.x = element_text()) +
+  labs(x = "Highest grossing films adjusted for inflation")
+```
+
