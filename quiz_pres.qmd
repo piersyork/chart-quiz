@@ -3,7 +3,7 @@ title: "Chart quiz"
 format: 
   revealjs:
     theme: simple
-    self-contained: true
+    self-contained: false
 # pptx
 editor: visual
 ---
